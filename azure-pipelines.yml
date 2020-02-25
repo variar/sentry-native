@@ -100,3 +100,47 @@ stages:
               $ANDROID_HOME/platform-tools/adb push ./build "${DEVICE_DIR}"
               $ANDROID_HOME/platform-tools/adb shell "cd ${DEVICE_DIR}/build && ./sentry_tests"
             displayName: Test
+
+  - stage: release
+    displayName: Create release
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')
+    dependsOn: test
+
+    jobs:
+      - job:
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - checkout: self
+            submodules: recursive
+          - script: |
+              set -ex
+              git checkout origin/master
+              git merge $(Build.SourceBranch)
+              git push origin
+              # SourceBranchName is the last path segment, so the `1.2.3` in `refs/heads/release/1.2.3`
+              git push origin --delete release/$(Build.SourceBranchName)
+              git tag --message="$(Build.SourceBranchName)" $(Build.SourceBranchName)
+              git push origin --follow-tags
+            displayName: Merging release branch to master
+          - task: DeleteFiles@1
+            displayName: Remove all .git files
+            inputs:
+              contents: |
+                .git*
+                **/.git*
+          - task: ArchiveFiles@2
+            displayName: Create release archive
+            inputs:
+              rootFolderOrFile: $(Build.SourcesDirectory)
+              archiveFile: "$(Build.ArtifactStagingDirectory)/sentry-native-$(Build.SourceBranchName).zip"
+          - task: PublishBuildArtifacts@1
+            displayName: Publish release archive to Azure
+            inputs:
+              pathtoPublish: "$(Build.ArtifactStagingDirectory)/sentry-native-$(Build.SourceBranchName).zip"
+          - task: GitHubRelease@0
+            displayName: Create GitHub release
+            inputs:
+              gitHubConnection: getsentry
+              tagSource: manual
+              tag: $(Build.SourceBranchName)
