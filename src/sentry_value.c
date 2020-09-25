@@ -30,6 +30,9 @@
  *
  * We expect all of the pointers we deal with to be at least 4-byte aligned,
  * which means we can use the least significant 2 bits for tagging.
+ * We only ever save pointers to `thing_t`, which has an `alignof >= 4`, and
+ * also both our own allocator, and the system allocator should give us
+ * properly aligned pointers.
  *
  * xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxx00
  *                                                                      ||
