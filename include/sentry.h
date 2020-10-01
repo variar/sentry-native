@@ -588,7 +588,7 @@ SENTRY_API void sentry_transport_set_shutdown_func(
  * It should return `0` on success in case user confirmed consent,
  * or `1` if no consent.
  */
-void
+SENTRY_API void
 sentry_transport_set_ask_consent_func(sentry_transport_t *transport,
     int (*ask_consent_func)(sentry_envelope_t *envelope, void *state));
 
